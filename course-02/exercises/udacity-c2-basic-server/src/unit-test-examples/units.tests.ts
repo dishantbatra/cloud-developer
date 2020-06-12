@@ -1,4 +1,4 @@
-import { add, divide } from './units';
+import { add, divide, concatenate } from './units';
 
 import { expect } from 'chai';
 import 'mocha';
@@ -32,6 +32,10 @@ describe('divide', () => {
   it('should throw an error if div by zero', () => {
     expect(()=>{ divide(5,0) }).to.throw('div by 0')
   });
+
+  it('should concatenate string',()=>{
+    expect(concatenate('dishant','batra')).to.equal('dishantbatra')
+  })
 
 });
 
