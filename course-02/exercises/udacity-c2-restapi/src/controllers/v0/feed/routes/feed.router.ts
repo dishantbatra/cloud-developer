@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { FeedItem } from '../models/FeedItem';
 import { requireAuth } from '../../users/routes/auth.router';
 import * as AWS from '../../../../aws';
+import { any } from 'bluebird';
 
 const router: Router = Router();
 
@@ -18,13 +19,35 @@ router.get('/', async (req: Request, res: Response) => {
 
 //@TODO
 //Add an endpoint to GET a specific resource by Primary Key
-
+router.get('/:id',requireAuth,async(req:Request ,res:Response)=>{
+    let { id } = req.params;
+    if(!id){
+       return res.status(400).send("Id is required")
+    }
+    const item = await FeedItem.findByPk(id)
+    res.status(200).send(item)
+})
 // update a specific resource
 router.patch('/:id', 
     requireAuth, 
     async (req: Request, res: Response) => {
         //@TODO try it yourself
-        res.send(500).send("not implemented")
+        let {id} = req.params
+        if(!id){
+            return res.status(400).send('Id is required')
+        }
+        let item = await FeedItem.findByPk(id)
+        let body:any= req.body;
+        if(item==null){
+            return res.status(404).send(`No item exist for the id:-${id}`)
+        }
+        for(var prop in body){
+            if(body){
+                item.setDataValue(prop,body[prop])
+            }
+        }
+        await item.save()
+        res.status(200).send(item)
 });
 
 
@@ -34,7 +57,7 @@ router.get('/signed-url/:fileName',
     async (req: Request, res: Response) => {
     let { fileName } = req.params;
     const url = AWS.getPutSignedUrl(fileName);
-    res.status(201).send({url: url});
+    res.status(201).send({url});
 });
 
 // Post meta data and the filename after a file is uploaded 
@@ -43,9 +66,9 @@ router.get('/signed-url/:fileName',
 router.post('/', 
     requireAuth, 
     async (req: Request, res: Response) => {
+
     const caption = req.body.caption;
     const fileName = req.body.url;
-
     // check Caption is valid
     if (!caption) {
         return res.status(400).send({ message: 'Caption is required or malformed' });
@@ -56,7 +79,7 @@ router.post('/',
         return res.status(400).send({ message: 'File url is required' });
     }
 
-    const item = await new FeedItem({
+    const item =  new FeedItem({
             caption: caption,
             url: fileName
     });
